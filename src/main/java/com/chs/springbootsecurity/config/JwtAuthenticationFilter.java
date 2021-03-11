@@ -28,7 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Set<String> SHOULD_NOT_FILTER = Set.of("/authenticate", "/refreshtoken");
 
     @Autowired
-    private JwtUtil jwtTokenUtil;
+    private JwtUtil jwtUtil;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -36,10 +36,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain chain) throws ServletException, IOException {
         try {
             String jwtToken = extractJwtFromRequest(request);
-            if (StringUtils.hasText(jwtToken) && jwtTokenUtil.validateToken(jwtToken)) {
-                var userDetails = new User(jwtTokenUtil.getUsernameFromToken(jwtToken), "", jwtTokenUtil.getRolesFromToken(jwtToken));
+            if (StringUtils.hasText(jwtToken) && jwtUtil.validateToken(jwtToken)) {
+                var userDetails = new User(jwtUtil.getUsernameFromToken(jwtToken), "", jwtUtil.getRolesFromToken(jwtToken));
                 var authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             } else {
                 log.warn("Cannot set the Security Context");

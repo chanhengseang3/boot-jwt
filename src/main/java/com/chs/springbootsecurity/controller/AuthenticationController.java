@@ -5,7 +5,7 @@ import com.chs.springbootsecurity.data.AuthenticationResponse;
 import com.chs.springbootsecurity.data.UserData;
 import com.chs.springbootsecurity.service.CustomUserDetailsService;
 import com.chs.springbootsecurity.service.JwtUtil;
-import com.chs.springbootsecurity.service.TokenConstants;
+import com.chs.springbootsecurity.service.TokenConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -29,7 +29,7 @@ public class AuthenticationController {
 
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
-    private final TokenConstants tokenConstants;
+    private final TokenConfig tokenConfig;
     private final JwtUtil jwtUtil;
 
     @PostMapping("authenticate")
@@ -52,7 +52,7 @@ public class AuthenticationController {
         Claims claims;
         try {
             claims = Jwts.parser()
-                    .setSigningKey(tokenConstants.getSecret())
+                    .setSigningKey(tokenConfig.getSecret())
                     .parseClaimsJwt(token)
                     .getBody();
         } catch (ExpiredJwtException e) {

@@ -5,14 +5,14 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.2.0.RELEASE</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<version>2.4.3</version>
+		<relativePath/>
 	</parent>
-	<groupId>com.javainuse</groupId>
+	<groupId>com.chs</groupId>
 	<artifactId>spring-boot-security</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>spring-boot-security</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Demo project for Spring Boot with JWT</description>
 
 	<properties>
 		<java.version>11</java.version>

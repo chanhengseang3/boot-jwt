@@ -13,7 +13,7 @@ import java.util.*;
 public class JwtUtil {
 
     @Autowired
-    private TokenConstants tokenConstants;
+    private TokenConfig tokenConfig;
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
@@ -33,8 +33,8 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + tokenConstants.getJwtExpirationInMs()))
-                .signWith(SignatureAlgorithm.HS512, tokenConstants.getSecret()).compact();
+                .setExpiration(new Date(System.currentTimeMillis() + tokenConfig.getJwtExpirationInMs()))
+                .signWith(SignatureAlgorithm.HS512, tokenConfig.getSecret()).compact();
     }
 
     public String generateRefreshToken(Map<String, Object> claims, String subject) {
@@ -42,13 +42,13 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + tokenConstants.getRefreshExpirationDateInMs()))
-                .signWith(SignatureAlgorithm.HS512, tokenConstants.getSecret()).compact();
+                .setExpiration(new Date(System.currentTimeMillis() + tokenConfig.getRefreshExpirationDateInMs()))
+                .signWith(SignatureAlgorithm.HS512, tokenConfig.getSecret()).compact();
     }
 
     public boolean validateToken(String authToken) {
         try {
-            Jwts.parser().setSigningKey(tokenConstants.getSecret()).parseClaimsJws(authToken);
+            Jwts.parser().setSigningKey(tokenConfig.getSecret()).parseClaimsJws(authToken);
             return true;
         } catch (SignatureException | MalformedJwtException | UnsupportedJwtException | IllegalArgumentException ex) {
             throw new BadCredentialsException("INVALID_CREDENTIALS", ex);
@@ -57,7 +57,7 @@ public class JwtUtil {
 
     public String getUsernameFromToken(String token) {
         Claims claims = Jwts.parser()
-                .setSigningKey(tokenConstants.getSecret())
+                .setSigningKey(tokenConfig.getSecret())
                 .parseClaimsJws(token)
                 .getBody();
         return claims.getSubject();
@@ -66,7 +66,7 @@ public class JwtUtil {
     public List<SimpleGrantedAuthority> getRolesFromToken(String token) {
 
         Claims claims = Jwts.parser()
-                .setSigningKey(tokenConstants.getSecret())
+                .setSigningKey(tokenConfig.getSecret())
                 .parseClaimsJws(token)
                 .getBody();
 

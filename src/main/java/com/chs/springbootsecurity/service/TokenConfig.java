@@ -2,11 +2,11 @@ package com.chs.springbootsecurity.service;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 @Getter
-@Service
-public class TokenConstants {
+@Component
+public class TokenConfig {
 
     @Value("${jwt.secret}")
     private String secret;
