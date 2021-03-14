@@ -1,8 +1,7 @@
 package com.chs.springbootsecurity.controller;
 
+import com.chs.springbootsecurity.data.AuthenticationData;
 import com.chs.springbootsecurity.data.AuthenticationRequest;
-import com.chs.springbootsecurity.data.AuthenticationResponse;
-import com.chs.springbootsecurity.data.UserData;
 import com.chs.springbootsecurity.service.CustomUserDetailsService;
 import com.chs.springbootsecurity.service.JwtUtil;
 import com.chs.springbootsecurity.service.TokenConfig;
@@ -10,20 +9,22 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+@Slf4j
 @RestController
+@RequestMapping("auth")
 @RequiredArgsConstructor
 public class AuthenticationController {
 
@@ -32,41 +33,51 @@ public class AuthenticationController {
     private final TokenConfig tokenConfig;
     private final JwtUtil jwtUtil;
 
-    @PostMapping("authenticate")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest) {
-        var authenticationToken = new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword());
+    @PostMapping("token")
+    public AuthenticationData createAuthenticationToken(@RequestBody AuthenticationRequest request) {
+        var authenticationToken = new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword());
         authenticationManager.authenticate(authenticationToken);
-        UserDetails userdetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
-        String token = jwtUtil.generateToken(userdetails);
-        return ResponseEntity.ok(new AuthenticationResponse(token));
+        UserDetails userdetails = userDetailsService.loadUserByUsername(request.getUsername());
+        return jwtUtil.generateToken(userdetails);
     }
 
-    @PostMapping("register")
-    public ResponseEntity<?> saveUser(@RequestBody UserData user) {
-        return ResponseEntity.ok(userDetailsService.save(user));
-    }
-
-    @PostMapping("refreshtoken")
+    @PostMapping("refresh-token")
     public ResponseEntity<?> refreshToken(@RequestParam String token) {
 
+        // get claims
         Claims claims;
         try {
             claims = Jwts.parser()
                     .setSigningKey(tokenConfig.getSecret())
-                    .parseClaimsJwt(token)
+                    .parseClaimsJws(token)
                     .getBody();
         } catch (ExpiredJwtException e) {
-            claims = e.getClaims();
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Refresh token is expired");
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid refresh token");
         }
 
-        Map<String, Object> expectedMap = getMapFromIoJsonWebTokenClaims(claims);
+        // validate token type
+        if (!claims.containsKey("refreshToken")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provided token is not refresh token");
+        }
 
-        String authToken = jwtUtil.generateRefreshToken(expectedMap, expectedMap.get("sub").toString());
-        return ResponseEntity.ok(new AuthenticationResponse(authToken));
+        var expectedMap = getMapFromIoJsonWebTokenClaims(claims);
+        var subject = expectedMap.get("sub").toString();
+
+        // generate refresh token
+        var refreshToken = jwtUtil.generateRefreshToken(expectedMap, subject);
+
+        // generate token
+        expectedMap.remove("refreshToken");
+        var authToken = jwtUtil.generateToken(expectedMap, subject);
+
+        return ResponseEntity.ok(new AuthenticationData(authToken, refreshToken));
     }
 
     private Map<String, Object> getMapFromIoJsonWebTokenClaims(Claims claims) {
-        Map<String, Object> expectedMap = new HashMap<String, Object>();
+        Map<String, Object> expectedMap = new HashMap<>();
         for (Entry<String, Object> entry : claims.entrySet()) {
             expectedMap.put(entry.getKey(), entry.getValue());
         }

@@ -1,5 +1,6 @@
 package com.chs.springbootsecurity.service;
 
+import com.chs.springbootsecurity.data.AuthenticationData;
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -15,7 +16,7 @@ public class JwtUtil {
     @Autowired
     private TokenConfig tokenConfig;
 
-    public String generateToken(UserDetails userDetails) {
+    public AuthenticationData generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         var roles = userDetails.getAuthorities();
 
@@ -25,10 +26,15 @@ public class JwtUtil {
         if (roles.contains(new SimpleGrantedAuthority("ROLE_USER"))) {
             claims.put("isUser", true);
         }
-        return generateToken(claims, userDetails.getUsername());
+        var token = generateToken(claims, userDetails.getUsername());
+
+        // add flag
+        claims.put("refreshToken", true);
+        var refreshToken = generateRefreshToken(claims, userDetails.getUsername());
+        return new AuthenticationData(token, refreshToken);
     }
 
-    private String generateToken(Map<String, Object> claims, String subject) {
+    public String generateToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
@@ -48,8 +54,11 @@ public class JwtUtil {
 
     public boolean validateToken(String authToken) {
         try {
-            Jwts.parser().setSigningKey(tokenConfig.getSecret()).parseClaimsJws(authToken);
-            return true;
+            var claims = Jwts.parser()
+                    .setSigningKey(tokenConfig.getSecret())
+                    .parseClaimsJws(authToken)
+                    .getBody();
+            return !claims.containsKey("refreshToken");
         } catch (SignatureException | MalformedJwtException | UnsupportedJwtException | IllegalArgumentException ex) {
             throw new BadCredentialsException("INVALID_CREDENTIALS", ex);
         }

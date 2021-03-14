@@ -20,7 +20,6 @@ import java.util.List;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userDao;
-    private final PasswordEncoder bcryptEncoder;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -31,14 +30,6 @@ public class CustomUserDetailsService implements UserDetailsService {
             return new User(user.getUsername(), user.getPassword(), roles);
         }
         throw new UsernameNotFoundException("User not found with the name " + username);
-    }
-
-    public DAOUser save(UserData user) {
-        DAOUser newUser = new DAOUser();
-        newUser.setUsername(user.getUsername());
-        newUser.setPassword(bcryptEncoder.encode(user.getPassword()));
-        newUser.setRole(user.getRole());
-        return userDao.save(newUser);
     }
 
 }
