@@ -1,6 +1,7 @@
 package com.chs.springbootsecurity.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -25,7 +26,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         Exception exception = (Exception) request.getAttribute("exception");
         String message;
 
-        if (exception != null) {
+        if (exception instanceof ExpiredJwtException) {
             byte[] body = new ObjectMapper().writeValueAsBytes(Collections.singletonMap("cause", exception.toString()));
             response.getOutputStream().write(body);
         } else {

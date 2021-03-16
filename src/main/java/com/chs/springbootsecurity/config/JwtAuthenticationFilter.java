@@ -3,7 +3,6 @@ package com.chs.springbootsecurity.config;
 import com.chs.springbootsecurity.exception.MyExceptionData;
 import com.chs.springbootsecurity.service.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -21,7 +20,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
-@Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -35,11 +33,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwtToken = extractJwtFromRequest(request);
             if (!StringUtils.hasText(jwtToken)) {
-                response.setStatus(HttpStatus.BAD_REQUEST.value());
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
                 var e = MyExceptionData.builder()
                         .message("Access token is empty")
                         .path(request.getRequestURI())
-                        .status(HttpStatus.BAD_REQUEST.value())
+                        .status(HttpStatus.UNAUTHORIZED.value())
                         .time(LocalDateTime.now())
                         .build();
                 response.getWriter().write(ApplicationConfiguration.OBJECT_MAPPER.writeValueAsString(e));
@@ -60,11 +58,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.getWriter().write(ApplicationConfiguration.OBJECT_MAPPER.writeValueAsString(e));
             }
         } catch (ExpiredJwtException | BadCredentialsException ex) {
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
             var e = MyExceptionData.builder()
                     .message(ex.getMessage())
                     .path(request.getRequestURI())
-                    .status(HttpStatus.BAD_REQUEST.value())
+                    .status(HttpStatus.UNAUTHORIZED.value())
                     .time(LocalDateTime.now())
                     .build();
             response.getWriter().write(ApplicationConfiguration.OBJECT_MAPPER.writeValueAsString(e));
