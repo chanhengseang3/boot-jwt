@@ -1,10 +1,10 @@
 package com.chs.springbootsecurity.config;
 
-import com.chs.springbootsecurity.exception.MyExceptionData;
+import com.chs.springbootsecurity.exception.TokenEmptyException;
+import com.chs.springbootsecurity.exception.TokenViolationException;
 import com.chs.springbootsecurity.service.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,7 +18,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.LocalDateTime;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -33,40 +32,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwtToken = extractJwtFromRequest(request);
             if (!StringUtils.hasText(jwtToken)) {
-                response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                var e = MyExceptionData.builder()
-                        .message("Access token is empty")
-                        .path(request.getRequestURI())
-                        .status(HttpStatus.UNAUTHORIZED.value())
-                        .time(LocalDateTime.now())
-                        .build();
-                response.getWriter().write(ApplicationConfiguration.OBJECT_MAPPER.writeValueAsString(e));
+                // token is empty
+                request.setAttribute("exception", new TokenEmptyException());
             } else if (jwtUtil.validateToken(jwtToken)) {
                 var userDetails = new User(jwtUtil.getUsernameFromToken(jwtToken), "", jwtUtil.getRolesFromToken(jwtToken));
                 var authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                chain.doFilter(request, response);
             } else {
                 // using refresh token
-                response.setStatus(HttpStatus.BAD_REQUEST.value());
-                var e = MyExceptionData.builder()
-                        .message("Violation use of refresh token")
-                        .path(request.getRequestURI())
-                        .status(HttpStatus.BAD_REQUEST.value())
-                        .time(LocalDateTime.now())
-                        .build();
-                response.getWriter().write(ApplicationConfiguration.OBJECT_MAPPER.writeValueAsString(e));
+                request.setAttribute("exception", new TokenViolationException());
             }
         } catch (ExpiredJwtException | BadCredentialsException ex) {
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-            var e = MyExceptionData.builder()
-                    .message(ex.getMessage())
-                    .path(request.getRequestURI())
-                    .status(HttpStatus.UNAUTHORIZED.value())
-                    .time(LocalDateTime.now())
-                    .build();
-            response.getWriter().write(ApplicationConfiguration.OBJECT_MAPPER.writeValueAsString(e));
+            request.setAttribute("exception", ex);
         }
+        chain.doFilter(request, response);
     }
 
     private String extractJwtFromRequest(HttpServletRequest request) {

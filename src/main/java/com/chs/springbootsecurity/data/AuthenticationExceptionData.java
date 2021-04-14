@@ -1,4 +1,4 @@
-package com.chs.springbootsecurity.exception;
+package com.chs.springbootsecurity.data;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Builder
 @Getter
-public class MyExceptionData {
+public class AuthenticationExceptionData {
     private final int status;
     private final String message;
     private final String path;
